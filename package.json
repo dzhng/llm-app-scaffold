@@ -4,14 +4,21 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:inngest": "npx inngest-cli@latest dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node --import tsx --test src/**/*test.ts"
+    "lint:fix": "next lint --fix",
+    "format:write": "prettier --ignore-path .gitignore --write \"./**/*.{js,ts,tsx,mdx}\"",
+    "format:check": "prettier --ignore-path .gitignore  --check \"./**/*.{js,ts,tsx,mdx}\"",
+    "test": "node --import tsx --test src/**/*test.ts",
+    "vercel:env": "vercel env pull .env",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-icons": "^1.3.0",
+    "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-slot": "^1.0.2",
     "@supabase/supabase-js": "^2.39.7",
     "@tanstack/react-query": "^4.36.1",
@@ -41,7 +48,7 @@
     "p-throttle": "^6.1.0",
     "react": "^18",
     "react-dom": "^18",
-    "react-hook-form": "^7.50.1",
+    "react-hook-form": "^7.51.0",
     "react-hot-toast": "^2.4.1",
     "react-intersection-observer": "^9.8.1",
     "react-markdown": "^9.0.1",
