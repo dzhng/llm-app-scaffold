@@ -44,7 +44,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen space-y-3 p-24">
-      <h1 className="text-lg font-bold">Deep Seek</h1>
+      <h1 className="text-lg font-bold">Researcher</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
           <FormField

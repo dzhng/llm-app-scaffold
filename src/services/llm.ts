@@ -1,10 +1,4 @@
-import {
-  AnthropicBedrockChatApi,
-  AnthropicChatApi,
-  ChatRequestMessage,
-  OpenAIChatApi,
-  TokenError,
-} from 'llm-api';
+import { AnthropicChatApi, ChatRequestMessage, OpenAIChatApi } from 'llm-api';
 import { partial } from 'lodash';
 import { z } from 'zod';
 import { chat, completion, RequestOptions, Response } from 'zod-gpt';
@@ -23,59 +17,40 @@ export const gpt3 = new OpenAIChatApi(
   {
     apiKey: process.env.AZURE_OPENAI_KEY!,
     azureEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
-    azureDeployment: 'gpt-35',
-  },
-  { temperature: 0, contextSize: 4096 },
-);
-export const gpt3Completion: Completion = partial(completion, gpt3);
-export const gpt3Chat: Chat = partial(chat, gpt3);
-
-export const gpt3xl = new OpenAIChatApi(
-  {
-    apiKey: process.env.AZURE_OPENAI_KEY!,
-    azureEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
     azureDeployment: 'gpt-35-16k',
   },
   { temperature: 0, contextSize: 16_000 },
 );
-export const gpt3xlCompletion: Completion = partial(completion, gpt3xl);
-export const gpt3xlChat: Chat = partial(chat, gpt3xl);
+export const gpt3Completion: Completion = partial(completion, gpt3);
+export const gpt3Chat: Chat = partial(chat, gpt3);
 
 export const gpt4 = new OpenAIChatApi(
   {
-    apiKey: process.env.AZURE_OPENAI_KEY!,
-    azureEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
-    azureDeployment: 'gpt-4',
+    apiKey: process.env.OPENAI_KEY!,
   },
-  { temperature: 0, contextSize: 8129 },
+  // context size is technically 127793 tokens, but leave some room for margins
+  { model: 'gpt-4o', temperature: 0, contextSize: 120_000 },
 );
 export const gpt4Completion: Completion = partial(completion, gpt4);
 export const gpt4Chat: Chat = partial(chat, gpt4);
 
-export const gpt4xl = new OpenAIChatApi(
-  {
-    apiKey: process.env.AZURE_OPENAI_KEY!,
-    azureEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
-    azureDeployment: 'gpt-4-32k',
-  },
-  { temperature: 0, contextSize: 32_000 },
-);
-export const gpt4xlCompletion: Completion = partial(completion, gpt4xl);
-export const gpt4xlChat: Chat = partial(chat, gpt4xl);
+// NOTE: anthropic's model's context size is actually 200k, but do less because we're using the wrong tokenizer (tiktoken) to measure context size, and we don't want to pay too much for large context.
 
-export const gpt4turbo = new OpenAIChatApi(
+export const haiku = new AnthropicChatApi(
   {
-    apiKey: process.env.AZURE_OPENAI_KEY!,
-    azureEndpoint: process.env.AZURE_OPENAI_ENDPOINT,
-    azureDeployment: 'gpt-4-128k',
+    apiKey: process.env.ANTHROPIC_KEY!,
   },
-  // context size is technically 127793 tokens, but leave some room for margins
-  { temperature: 0, contextSize: 120_000, stream: true },
+  {
+    model: 'claude-3-haiku-20240307',
+    stream: true,
+    temperature: 0,
+    contextSize: 160_000,
+  },
 );
-export const gpt4TurboCompletion: Completion = partial(completion, gpt4turbo);
-export const gpt4TurboChat: Chat = partial(chat, gpt4turbo);
+export const haikuCompletion: Completion = partial(completion, haiku);
+export const haikuChat: Chat = partial(chat, haiku);
 
-export const anthropic = new AnthropicChatApi(
+export const sonnet = new AnthropicChatApi(
   {
     apiKey: process.env.ANTHROPIC_KEY!,
   },
@@ -83,59 +58,22 @@ export const anthropic = new AnthropicChatApi(
     model: 'claude-3-sonnet-20240229',
     stream: true,
     temperature: 0,
-    contextSize: 120_000, // NOTE: anthropic is actually 200k, but do less because we're using the wrong tokenizer (tiktoken) to measure context size, and we don't want to pay too much for large context.
+    contextSize: 160_000,
   },
 );
-export const anthropicCompletion: Completion = partial(completion, anthropic);
-export const anthropicChat: Chat = partial(chat, anthropic);
+export const sonnetCompletion: Completion = partial(completion, sonnet);
+export const sonnetChat: Chat = partial(chat, sonnet);
 
-export const bedrock = new AnthropicBedrockChatApi(
+export const opus = new AnthropicChatApi(
   {
-    accessKeyId: process.env.AWS_BEDROCK_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_BEDROCK_SECRET_KEY!,
+    apiKey: process.env.ANTHROPIC_KEY!,
   },
   {
-    model: 'anthropic.claude-v2:1',
+    model: 'claude-3-opus-20240229',
     stream: true,
     temperature: 0,
-    contextSize: 120_000,
+    contextSize: 160_000,
   },
 );
-export const bedrockCompletion: Completion = partial(completion, bedrock);
-export const bedrockChat: Chat = partial(chat, bedrock);
-
-// first try the smaller model without autoSlice, then try the large model if token error was found
-// switch between using openai's gpt3 and azure based on if a schema is provided or not
-export const gpt3DynamicCompletion: Completion = (prompt, opt) =>
-  gpt3Completion(prompt, {
-    ...opt,
-    autoSlice: false,
-  }).catch(e => {
-    if (e instanceof TokenError) {
-      console.info('Completion overflow for gpt-3, falling back to xl model');
-      return gpt3xlCompletion(prompt, {
-        ...opt,
-        // add long timeout for the xl model
-        timeout: 300_000,
-      });
-    } else {
-      throw e;
-    }
-  });
-
-export const gpt4DynamicCompletion: Completion = (prompt, opt) =>
-  gpt4Completion(prompt, {
-    ...opt,
-    autoSlice: false,
-  }).catch(e => {
-    if (e instanceof TokenError) {
-      console.info('Completion overflow for gpt-4, falling back to xl model');
-      return gpt4xlCompletion(prompt, {
-        ...opt,
-        // add long timeout for the xl model
-        timeout: 300_000,
-      });
-    } else {
-      throw e;
-    }
-  });
+export const opusCompletion: Completion = partial(completion, opus);
+export const opusChat: Chat = partial(chat, opus);
